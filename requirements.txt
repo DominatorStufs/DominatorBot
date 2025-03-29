@@ -1,0 +1,4 @@
+asyncio
+pyrogram
+pytgcalls
+yt-dlp
