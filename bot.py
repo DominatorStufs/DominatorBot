@@ -1,15 +1,19 @@
 import asyncio
 from pyrogram import Client, filters
-from pytgcalls import PyTgCalls, StreamType
+from pytgcalls import PyTgCalls
+from pytgcalls.types.stream import StreamType
 from pytgcalls.types.input_stream import AudioPiped
 import yt_dlp
 
 # Telegram Login Details
-API_ID = 6301598  # Apna API ID yahan daalein
-API_HASH = "0d273b28f61205ef571461540967255e"  # Apna API Hash yahan daalein
-PHONE_NUMBER = "+918920464831"  # Apna Telegram Number yahan daalein
+API_ID = 6301598  # Apna API ID
+API_HASH = "0d273b28f61205ef571461540967255e"  # Apna API Hash
+PHONE_NUMBER = "+918920464831"  # Apna Telegram Number
 
-app = Client("music_bot", api_id=API_ID, api_hash=API_HASH, phone_number=PHONE_NUMBER)
+# Initialize Pyrogram Client (Userbot Mode)
+app = Client("music_bot", api_id=API_ID, api_hash=API_HASH)
+
+# Initialize PyTgCalls
 call = PyTgCalls(app)
 
 # YouTube se audio extract karne ka function
@@ -38,7 +42,7 @@ async def play(_, message):
 
     audio_url = get_audio_url(youtube_url)
 
-    await call.join_group_call(chat_id, AudioPiped(audio_url, StreamType().local_stream))
+    await call.join_group_call(chat_id, AudioPiped(audio_url, StreamType().pulse_stream))
     await message.reply_text("Playing song in voice chat!")
 
 # /stop command (Gaana band karne ke liye)
@@ -54,7 +58,7 @@ async def start(_, message):
     await message.reply_text("Hello! I'm a music bot. Use /play [YouTube URL] to play music in voice chat.")
 
 # Stream End Handler
-@call.on_stream_end()
+@call.on_stream_end
 async def stream_end_handler(_, update):
     chat_id = update.chat_id
     await call.leave_group_call(chat_id)
@@ -62,6 +66,8 @@ async def stream_end_handler(_, update):
 # Run Bot
 async def main():
     async with app:
+        await app.send_code(PHONE_NUMBER)  # Prompt for OTP
+        print("Login required. Enter the OTP when prompted.")
         await call.start()
         print("Bot is running...")
         await asyncio.Event().wait()
