@@ -1,75 +1,52 @@
 import asyncio
 from pyrogram import Client, filters
-from pytgcalls import PyTgCalls
-from pytgcalls.types.stream import StreamType
-from pytgcalls.types.input_stream import AudioPiped
+from pytgcalls import GroupCallFactory
 import yt_dlp
 
-# Telegram Login Details
-API_ID = 6301598  # Apna API ID
-API_HASH = "0d273b28f61205ef571461540967255e"  # Apna API Hash
-PHONE_NUMBER = "+918920464831"  # Apna Telegram Number
+# Ultroid Configuration (Replace with your API credentials)
+API_ID = 123456  # Replace with your API ID
+API_HASH = "your_api_hash"  # Replace with your API Hash
+PHONE_NUMBER = "your_phone_number"  # Replace with your phone number
 
-# Initialize Pyrogram Client (Userbot Mode)
-app = Client("music_bot", api_id=API_ID, api_hash=API_HASH)
+# Initialize Userbot
+app = Client("Dominator", api_id=API_ID, api_hash=API_HASH, phone_number=PHONE_NUMBER)
+call = GroupCallFactory(app).get_group_call()
 
-# Initialize PyTgCalls
-call = PyTgCalls(app)
-
-# YouTube se audio extract karne ka function
-def get_audio_url(youtube_url):
-    ydl_opts = {
-        "format": "bestaudio/best",
-        "extractaudio": True,
-        "noplaylist": True,
-        "quiet": True,
-    }
+# Function to Extract Audio from YouTube
+async def get_audio_url(youtube_url):
+    ydl_opts = {"format": "bestaudio/best", "noplaylist": True, "quiet": True}
     with yt_dlp.YoutubeDL(ydl_opts) as ydl:
         info = ydl.extract_info(youtube_url, download=False)
         return info["url"]
 
-# /play command (Gaana bajane ke liye)
-@app.on_message(filters.command("play"))
+# Play Command
+@app.on_message(filters.command("play") & filters.me)
 async def play(_, message):
     if len(message.command) < 2:
-        await message.reply_text("Usage: /play [YouTube URL]")
-        return
-
+        return await message.reply_text("Usage: /play [YouTube URL]")
+    
     youtube_url = message.command[1]
     chat_id = message.chat.id
+    await message.reply_text("Fetching audio...")
+    audio_url = await get_audio_url(youtube_url)
+    await call.join_group_call(chat_id, audio_url)
+    await message.reply_text("Playing in VC!")
 
-    await message.reply_text("Downloading audio, please wait...")
-
-    audio_url = get_audio_url(youtube_url)
-
-    await call.join_group_call(chat_id, AudioPiped(audio_url, StreamType().pulse_stream))
-    await message.reply_text("Playing song in voice chat!")
-
-# /stop command (Gaana band karne ke liye)
-@app.on_message(filters.command("stop"))
+# Stop Command
+@app.on_message(filters.command("stop") & filters.me)
 async def stop(_, message):
-    chat_id = message.chat.id
-    await call.leave_group_call(chat_id)
-    await message.reply_text("Stopped playing music!")
+    await call.leave_group_call(message.chat.id)
+    await message.reply_text("Stopped!")
 
-# /start command
-@app.on_message(filters.command("start"))
+# Start Command
+@app.on_message(filters.command("start") & filters.me)
 async def start(_, message):
-    await message.reply_text("Hello! I'm a music bot. Use /play [YouTube URL] to play music in voice chat.")
+    await message.reply_text("Dominator Userbot is Active! Use /play to play songs in VC.")
 
-# Stream End Handler
-@call.on_stream_end
-async def stream_end_handler(_, update):
-    chat_id = update.chat_id
-    await call.leave_group_call(chat_id)
-
-# Run Bot
 async def main():
     async with app:
-        await app.send_code(PHONE_NUMBER)  # Prompt for OTP
-        print("Login required. Enter the OTP when prompted.")
         await call.start()
-        print("Bot is running...")
+        print("Dominator Userbot is Running...")
         await asyncio.Event().wait()
 
 asyncio.run(main())
