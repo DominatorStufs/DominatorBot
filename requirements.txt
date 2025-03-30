@@ -1,4 +1,5 @@
-asyncio
 pyrogram
 pytgcalls
 yt-dlp
+logging
+asyncio
