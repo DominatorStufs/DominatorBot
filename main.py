@@ -367,6 +367,8 @@ async def rpg_info(client, message):
     except Exception as e:
         logger.error(f"Error in rpg info command: {e}")
         await message.reply_text("An error occured.")
+        
+logger.info("🔥 Dominator Userbot Started!")
 
 loop = asyncio.get_event_loop()
 app.run()
