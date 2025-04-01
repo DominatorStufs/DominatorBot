@@ -1,2 +1,2 @@
-pyrogram
-psutil
+pyrogram==2.0.10
+psutil==5.8.0
