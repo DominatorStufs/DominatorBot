@@ -271,13 +271,20 @@ async def rpg_start(client, message):
 @app.on_message(filters.command("rpg explore", prefixes=PREFIX) & filters.me)
 async def rpg_explore(client, message):
     try:
-        direction = message.text.split(" ")[2]
-        if direction == "north":
-            game_state["location"] = "forest"
-            game_state["current_enemy"] = Monster("Goblin", 50, 8, 3, 1)
-            await message.reply_text("You enter the forest and encounter a Goblin!")
+        direction = message.text.split(" ")[2].lower()  # Convert to lowercase
+        locations = {
+            "north": "forest",
+            "south": "cave",
+            "east": "mountains",
+            "west": "river",
+        }
+
+        if direction in locations:
+            game_state["location"] = locations[direction]
+            game_state["current_enemy"] = Monster("Goblin", 50, 8, 3, 1)  # Example monster
+            await message.reply_text(f"You enter the {locations[direction]} and encounter a Goblin!")
         else:
-            await message.reply_text("You can only go north.")
+            await message.reply_text("You can go north, south, east, or west.")
         logger.info("rpg explore command executed")
     except Exception as e:
         logger.error(f"Error in rpg explore command: {e}")
@@ -321,20 +328,6 @@ async def rpg_info(client, message):
         logger.info("rpg info command executed")
     except Exception as e:
         logger.error(f"Error in rpg info command: {e}")
-        await message.reply_text("An error occured.")
-
-# New command: calculator
-@app.on_message(filters.command("calc", prefixes=PREFIX) & filters.me)
-async def calculator(client, message):
-    try:
-        expression = message.text.split(" ", 1)[1]
-        result = eval(expression)
-        await message.reply_text(f"Result: {result}")
-        logger.info("calc command executed")
-    except (IndexError, SyntaxError, NameError) as e:
-        await message.reply_text(f"Invalid expression: {e}")
-    except Exception as e:
-        logger.error(f"Error in calc command: {e}")
         await message.reply_text("An error occured.")
 
 loop = asyncio.get_event_loop()
