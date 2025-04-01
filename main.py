@@ -31,22 +31,39 @@ def admin_only(func):
         return await func(client, message)
     return wrapper
 
-# Command: Alive
+# Command: Alive 
 @app.on_message(filters.command("alive", prefixes=PREFIX) & filters.me)
 async def alive(client, message):
     try:
         uptime = time.time() - start_time
         hours, remainder = divmod(int(uptime), 3600)
         minutes, seconds = divmod(remainder, 60)
-        uptime_str = f"{hours}h {minutes}m {seconds}s"
+        uptime_str = f"**{hours}h {minutes}m {seconds}s**"
 
-        caption = f"**🔥 Dominator Userbot is Alive!**\n🚀 Uptime: {uptime_str}"
+        # System Stats
+        try:
+            cpu_percent = psutil.cpu_percent(interval=1)
+            cpu_str = f"**{cpu_percent}%**"
+        except PermissionError:
+            cpu_str = "⚠️ **Unavailable** ⚠️"
+            logger.warning("Permission denied accessing CPU usage.")
+        ram = psutil.virtual_memory()
+        ram_percent = f"**{ram.percent}%**"
+
+        # Enhanced Caption with Emojis & Formatting (More Visual Appeal)
+        caption = (
+            "🚀 **Dominator is Online!** 🌟\n\n"
+            "⏱️ **Uptime:** {}\n\n"
+            "⚙️ **CPU:** {}\n"
+            "🐏 **RAM:** {}\n\n"
+            "🔥 **Dominating the Telegram Universe!** 🔥".format(uptime_str, cpu_str, ram_percent)
+        )
         await message.reply_photo(photo=IMAGE_URL, caption=caption)
 
         logger.info("Alive command executed")
     except Exception as e:
         logger.error(f"Error in alive command: {e}")
-        await message.reply_text("An error occured.")
+        await message.reply_text("❌ **An Error Occurred!** ❌")
 
 # Command: Ping
 @app.on_message(filters.command("ping", prefixes=PREFIX) & filters.me)
