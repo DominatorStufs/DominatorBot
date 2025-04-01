@@ -2,6 +2,7 @@ import asyncio
 import time
 import logging
 import random
+import psutil
 
 from pyrogram import Client, filters, enums
 from pyrogram.types import InputMediaPhoto
@@ -51,17 +52,54 @@ async def alive(client, message):
 @app.on_message(filters.command("ping", prefixes=PREFIX) & filters.me)
 async def ping(client, message):
     try:
-        start = time.time()
+        start_time = time.time()
         reply = await message.reply_text("Pinging...")
-        latency = (time.time() - start) * 1000  # Convert to ms
+        end_time = time.time()
+        latency = (end_time - start_time) * 1000  # Convert to ms
 
-        await reply.delete()
-        await message.reply_photo(photo=IMAGE_URL, caption=f"🏓 Pong!\n⚡ Latency: {latency:.2f} ms")
+        # Storage Information
+        try:
+            disk_usage = psutil.disk_usage("/")
+            total_storage = disk_usage.total / (1024 * 1024 * 1024)  # GB
+            free_storage = disk_usage.free / (1024 * 1024 * 1024)  # GB
+            storage_str = f"💾 Storage: {free_storage:.2f}GB / {total_storage:.2f}GB"
+        except Exception as storage_e:
+            storage_str = "💾 Storage: Unavailable"
+            logger.warning(f"Storage info error: {storage_e}")
+
+        # Server/Host Information
+        try:
+            os_info = f"💻 OS: {platform.system()} {platform.release()} ({platform.machine()})"
+        except Exception as os_e:
+            os_info = "💻 OS: Unavailable"
+            logger.warning(f"OS info error: {os_e}")
+
+        # CPU Cores
+        try:
+            cpu_cores = psutil.cpu_count(logical=False)
+            cpu_logical_cores = psutil.cpu_count(logical=True)
+            cpu_str = f"⚙️ CPU: {cpu_cores} Cores ({cpu_logical_cores} Logical)"
+        except Exception as cpu_e:
+            cpu_str = "⚙️ CPU: Unavailable"
+            logger.warning(f"CPU info error: {cpu_e}")
+
+        # RAM Information
+        try:
+            ram = psutil.virtual_memory()
+            total_ram = ram.total / (1024 * 1024 * 1024)  # GB
+            available_ram = ram.available / (1024 * 1024 * 1024)  # GB
+            ram_str = f"🐏 RAM: {available_ram:.2f}GB / {total_ram:.2f}GB"
+        except Exception as ram_e:
+            ram_str = "🐏 RAM: Unavailable"
+            logger.warning(f"RAM info error: {ram_e}")
+
+        await reply.delete() #Delete the text pinging message.
+        await message.reply_photo(photo=IMAGE_URL, caption=f"🏓 Pong!\n⚡ Latency: {latency:.2f} ms\n{storage_str}\n{os_info}\n{cpu_str}\n{ram_str}")
 
         logger.info("Ping command executed")
     except Exception as e:
         logger.error(f"Error in ping command: {e}")
-        await message.reply_text("An error occured.")
+        await message.reply_text("An error occurred.")
 
 # Command: Help
 @app.on_message(filters.command("help", prefixes=PREFIX) & filters.me)
