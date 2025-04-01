@@ -368,6 +368,25 @@ async def rpg_info(client, message):
         logger.error(f"Error in rpg info command: {e}")
         await message.reply_text("An error occured.")
         
+# Auto Reply Feature
+@app.on_message(filters.private)
+async def auto_reply(client, message):
+    if not message.text:
+        return
+
+    text = message.text.lower()
+
+    greetings = ['hi', 'hello', 'hey', 'hi there', 'hello there']
+    responses = [
+        "Hey there! How's it going? 😊",
+        "Hello! How are you doing today? 😃",
+        "Hi! What's up? 😎",
+        "Hello, how can I assist you today? 😄"
+    ]
+
+    if any(text.startswith(greet) for greet in greetings):
+        await message.reply_text(random.choice(responses))
+        
 logger.info("🔥 Dominator Userbot Started!")
 
 loop = asyncio.get_event_loop()
