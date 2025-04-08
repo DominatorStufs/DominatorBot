@@ -31,7 +31,7 @@ def admin_only(func):
         return await func(client, message)
     return wrapper
 
-# Command: Alive 
+# Command: Alive
 @app.on_message(filters.command("alive", prefixes=PREFIX) & filters.me)
 async def alive(client, message):
     try:
@@ -53,12 +53,17 @@ async def alive(client, message):
         # Enhanced Caption with Emojis & Formatting (More Visual Appeal)
         caption = (
             "🚀 **Dominator is Online!** 🌟\n\n"
-            "⏱️ **Uptime:** {}\n\n"
-            "⚙️ **CPU:** {}\n"
-            "🐏 **RAM:** {}\n\n"
-            "🔥 **Dominating the Telegram Universe!** 🔥".format(uptime_str, cpu_str, ram_percent)
+            f"⏱️ **Uptime:** {uptime_str}\n\n"
+            f"⚙️ **CPU:** {cpu_str}\n"
+            f"🐏 **RAM:** {ram_percent}\n\n"
+            "🔥 **Dominating the Telegram Universe!** 🔥"
         )
-        await message.reply_photo(photo=IMAGE_URL, caption=caption)
+
+        try:
+            await client.send_photo(message.chat.id, photo=IMAGE_URL, caption=caption)
+        except Exception as e:
+            logger.warning(f"Failed to send photo for alive command: {e}. Sending text instead.")
+            await message.reply_text(caption)
 
         logger.info("Alive command executed")
     except Exception as e:
@@ -70,53 +75,105 @@ async def alive(client, message):
 async def ping(client, message):
     try:
         start_time = time.time()
-        reply = await message.reply_text("Pinging...")
+        ping_msg = await message.reply_text("✨ **Initiating System Diagnostics...** 🔭")
         end_time = time.time()
         latency = (end_time - start_time) * 1000  # Convert to ms
 
+        # System Information with Enhanced Aesthetics
+        report = "╭────────────────────╮\n"
+        report += "│🚀**Dominator System Report** 📊│\n"
+        report += "╰────────────────────╯\n\n"
+
+        report += f"⏱️ **Response Time:** `{latency:.2f} ms`\n\n"
+
         # Storage Information
+        report += "💾 **Disk Space:**\n"
         try:
-            disk_usage = psutil.disk_usage("/")
-            total_storage = disk_usage.total / (1024 * 1024 * 1024)  # GB
-            free_storage = disk_usage.free / (1024 * 1024 * 1024)  # GB
-            storage_str = f"💾 Storage: {free_storage:.2f}GB / {total_storage:.2f}GB"
-        except Exception as storage_e:
-            storage_str = "💾 Storage: Unavailable"
-            logger.warning(f"Storage info error: {storage_e}")
+            disk = psutil.disk_usage("/")
+            total_gb = disk.total / (1024 ** 3)
+            free_gb = disk.free / (1024 ** 3)
+            used_percent = disk.percent
+            progress_bar = "█" * int(used_percent / 5) + "░" * (20 - int(used_percent / 5))
+            report += f"  ╰─ 📊 `{used_percent:>3}%` Used | `{free_gb:.2f}GB` Free / `{total_gb:.2f}GB` Total\n"
+            report += f"     ╰─ [{progress_bar}]\n\n"
+        except Exception as e:
+            logger.warning(f"Error getting storage info: {e}")
+            report += "  ╰─ ⚠️ Unavailable ⚠️\n\n"
 
-        # Server/Host Information
+        # OS Information
+        report += "⚙️ **Operating System:**\n"
         try:
-            os_info = f"💻 OS: {platform.system()} {platform.release()} ({platform.machine()})"
-        except Exception as os_e:
-            os_info = "💻 OS: Unavailable"
-            logger.warning(f"OS info error: {os_e}")
+            import platform
+            os_name = platform.system()
+            os_release = platform.release()
+            arch = platform.machine()
+            report += f"  ╰─ 💻 `{os_name}` `{os_release}` (`{arch}`)\n\n"
+        except Exception as e:
+            logger.warning(f"Error getting OS info: {e}")
+            report += "  ╰─ ⚠️ Unavailable ⚠️\n\n"
 
-        # CPU Cores
+        # CPU Information
+        report += "💻 **Processor (CPU):**\n"
         try:
+            cpu_percent = psutil.cpu_percent(interval=1)
             cpu_cores = psutil.cpu_count(logical=False)
-            cpu_logical_cores = psutil.cpu_count(logical=True)
-            cpu_str = f"⚙️ CPU: {cpu_cores} Cores ({cpu_logical_cores} Logical)"
-        except Exception as cpu_e:
-            cpu_str = "⚙️ CPU: Unavailable"
-            logger.warning(f"CPU info error: {cpu_e}")
+            cpu_threads = psutil.cpu_count(logical=True)
+            progress_bar = "🔥" * int(cpu_percent / 5) + "░" * (20 - int(cpu_percent / 5))
+            report += f"  ╰─ 🌡️ `{cpu_percent:>3}%` Load | `{cpu_cores}` Cores, `{cpu_threads}` Threads\n"
+            report += f"     ╰─ [{progress_bar}]\n\n"
+        except Exception as e:
+            logger.warning(f"Error getting CPU info: {e}")
+            report += "  ╰─ ⚠️ Unavailable ⚠️\n\n"
 
         # RAM Information
+        report += "🧠 **Memory (RAM):**\n"
         try:
             ram = psutil.virtual_memory()
-            total_ram = ram.total / (1024 * 1024 * 1024)  # GB
-            available_ram = ram.available / (1024 * 1024 * 1024)  # GB
-            ram_str = f"🐏 RAM: {available_ram:.2f}GB / {total_ram:.2f}GB"
-        except Exception as ram_e:
-            ram_str = "🐏 RAM: Unavailable"
-            logger.warning(f"RAM info error: {ram_e}")
+            total_ram_gb = ram.total / (1024 ** 3)
+            available_ram_gb = ram.available / (1024 ** 3)
+            used_ram_percent = ram.percent
+            progress_bar = "🟢" * int(used_ram_percent / 5) + "⚪" * (20 - int(used_ram_percent / 5))
+            report += f"  ╰─ 💾 `{used_ram_percent:>3}%` Used | `{available_ram_gb:.2f}GB` Free / `{total_ram_gb:.2f}GB` Total\n"
+            report += f"     ╰─ [{progress_bar}]\n\n"
+        except Exception as e:
+            logger.warning(f"Error getting RAM info: {e}")
+            report += "  ╰─ ⚠️ Unavailable ⚠️\n\n"
 
-        await reply.delete() #Delete the text pinging message.
-        await message.reply_photo(photo=IMAGE_URL, caption=f"🏓 Pong!\n⚡ Latency: {latency:.2f} ms\n{storage_str}\n{os_info}\n{cpu_str}\n{ram_str}")
+        # Network Information
+        report += "🌐 **Network Activity:**\n"
+        try:
+            net_io = psutil.net_io_counters()
+            sent_mb = net_io.bytes_sent / (1024 ** 2)
+            recv_mb = net_io.bytes_recv / (1024 ** 2)
+            report += f"  ╰─ ⬆️ Sent: `{sent_mb:.2f} MB` | ⬇️ Received: `{recv_mb:.2f} MB`\n"
+
+            interfaces = psutil.net_if_addrs()
+            active_interfaces = [iface for iface, details in interfaces.items() if any(d.family == 2 for d in details)]  # AF_INET for IPv4
+            if active_interfaces:
+                report += f"  ╰─ 📡 Active Interface(s): `{', '.join(active_interfaces)}`\n\n"
+            else:
+                report += "  ╰─ 📡 Active Interface(s): `N/A`\n\n"
+        except Exception as e:
+            logger.warning(f"Error getting network info: {e}")
+            report += "  ╰─ ⚠️ Unavailable ⚠️\n\n"
+
+        report += "🛡️ **System Check Complete!** ✅\n"
+        report += "╰───────────────────╯"
+
+        await ping_msg.delete()  # Delete the "Initiating..." message
+
+        try:
+            await client.send_photo(message.chat.id, photo=IMAGE_URL, caption=report)
+        except Exception as e:
+            logger.warning(f"Failed to send photo: {e}. Sending text report instead.")
+            await message.reply_text(report)
 
         logger.info("Ping command executed")
     except Exception as e:
         logger.error(f"Error in ping command: {e}")
-        await message.reply_text("An error occurred.")
+        await message.reply_text("🚨 **System Diagnostics Failed!** ❌")
+
+
 
 # Command: Help
 @app.on_message(filters.command("help", prefixes=PREFIX) & filters.me)
@@ -139,11 +196,17 @@ async def help_command(client, message):
             f"- `{PREFIX}demote` → Demote a user\n"
             "\n🔥 **Enjoy using Dominator!** 🔥"
         )
-        await message.reply_photo(photo=IMAGE_URL, caption=help_text)
-        logger.info("Help command executed")
+        try:
+            await client.send_photo(message.chat.id, photo=IMAGE_URL, caption=help_text)
+            logger.info("Help command executed with photo")
+        except Exception as e:
+            logger.warning(f"Failed to send photo for help command: {e}. Sending text instead.")
+            await message.reply_text(help_text)
+            logger.info("Help command executed without photo")
     except Exception as e:
         logger.error(f"Error in help command: {e}")
-        await message.reply_text("An error occured.")
+        await message.reply_text("An error occurred.")
+
 
 # Command: Game Help
 @app.on_message(filters.command("game", prefixes=PREFIX) & filters.me)
